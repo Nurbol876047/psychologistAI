@@ -131,4 +131,31 @@ Start Command: npm start
 Environment: GEMINI_API_KEY=ваш ключ
 ```
 
+Backend принимает любое из этих имён переменной ключа:
+
+```text
+GEMINI_API_KEY
+GOOGLE_API_KEY
+GOOGLE_GENERATIVE_AI_API_KEY
+GOOGLE_GEMINI_API_KEY
+```
+
+После деплоя проверьте:
+
+```text
+https://psychologistai.onrender.com/api/health
+```
+
+Должно быть:
+
+```json
+{
+  "provider": "gemini",
+  "gemini": true,
+  "geminiKeyEnv": "GEMINI_API_KEY"
+}
+```
+
+Если в Render Logs написано `mock provider enabled with model mock`, значит ключ не добавлен в Environment выбранного Web Service.
+
 Если `/api/health` на production возвращает `404`, значит запущен только статический frontend, и чат не сможет обращаться к Gemini.

@@ -12,7 +12,14 @@ const distPath = resolve(currentDir, '../dist');
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 18 * 1024 * 1024 } });
 const port = Number(process.env.PORT || 8787);
-const geminiApiKey = process.env.GEMINI_API_KEY;
+const geminiApiKeyNames = [
+  'GEMINI_API_KEY',
+  'GOOGLE_API_KEY',
+  'GOOGLE_GENERATIVE_AI_API_KEY',
+  'GOOGLE_GEMINI_API_KEY',
+];
+const geminiApiKeyName = geminiApiKeyNames.find((keyName) => Boolean(process.env[keyName]?.trim()));
+const geminiApiKey = geminiApiKeyName ? process.env[geminiApiKeyName].trim() : '';
 const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const geminiThinkingBudget = Number(process.env.GEMINI_THINKING_BUDGET ?? 0);
 const geminiApiBaseUrl = (process.env.GEMINI_API_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta').replace(
@@ -93,7 +100,7 @@ function extractGeminiText(data) {
 
 async function generateGeminiText({ contents, instructions, maxOutputTokens = 320, temperature = 0.65 }) {
   if (!geminiApiKey) {
-    throw new Error('GEMINI_API_KEY is not configured');
+    throw new Error(`${geminiApiKeyNames.join(' or ')} is not configured`);
   }
 
   const payload = {
@@ -148,10 +155,10 @@ function mockReply(locale = 'kk') {
 
 function missingProviderMessage(locale = 'kk') {
   if (locale === 'ru') {
-    return 'AI backend не подключён: добавьте GEMINI_API_KEY в environment variables на Render и перезапустите сервис.';
+    return 'AI backend не подключён: добавьте GEMINI_API_KEY в Environment на Render и перезапустите сервис.';
   }
 
-  return 'AI backend қосылмаған: Render environment variables ішіне GEMINI_API_KEY қосып, сервисті қайта іске қосыңыз.';
+  return 'AI backend қосылмаған: Render Environment ішіне GEMINI_API_KEY қосып, сервисті қайта іске қосыңыз.';
 }
 
 function mockCameraAdvice(locale = 'kk', state = 'calm') {
@@ -184,8 +191,11 @@ app.get('/api/health', (_request, response) => {
     ok: true,
     provider: activeProvider,
     gemini: Boolean(geminiApiKey),
+    geminiKeyEnv: geminiApiKeyName ?? null,
+    acceptedGeminiKeyEnv: geminiApiKeyNames,
     openai: Boolean(openai),
     model: activeModel,
+    staticBuild: hasStaticBuild,
   });
 });
 
@@ -381,5 +391,10 @@ if (hasStaticBuild) {
 app.listen(port, () => {
   console.log(`Teacher Support AI backend listening on http://localhost:${port}`);
   console.log(`${activeProvider} provider enabled with model ${activeModel}`);
+  console.log(
+    geminiApiKey
+      ? `Gemini key loaded from ${geminiApiKeyName}`
+      : `Gemini key missing. Set one of: ${geminiApiKeyNames.join(', ')}`,
+  );
   console.log(hasStaticBuild ? `Serving frontend from ${distPath}` : 'Static frontend build not found; API-only mode');
 });
