@@ -1,0 +1,43 @@
+{
+  "name": "teacher-support-ai",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "dev:api": "node --watch server/index.js",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "lint": "eslint .",
+    "verify:visual": "node scripts/verify-visual.mjs"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.34",
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.17.10",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "framer-motion": "^11.18.2",
+    "lucide-react": "^0.468.0",
+    "multer": "^2.1.1",
+    "openai": "^6.34.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.1",
+    "three": "^0.171.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "globals": "^15.14.0",
+    "playwright-core": "^1.59.1",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.0.7"
+  }
+}
