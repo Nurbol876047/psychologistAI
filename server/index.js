@@ -76,13 +76,32 @@ function formatHistory(history = []) {
 }
 
 function formatGeminiHistory(history = []) {
-  return history.slice(-8).flatMap((item) => {
+  return history.slice(-8).reduce((items, item) => {
     const text = String(item.content ?? '').trim();
-    if (!text) return [];
+    if (!text || item.source === 'error' || text.includes('AI backend')) return items;
 
     const role = item.role === 'ai' || item.role === 'assistant' || item.role === 'model' ? 'model' : 'user';
-    return [{ role, parts: [{ text }] }];
-  });
+    if (items.length === 0 && role === 'model') return items;
+
+    const previous = items.at(-1);
+    if (previous?.role === role) {
+      previous.parts[0].text = `${previous.parts[0].text}\n${text}`;
+      return items;
+    }
+
+    items.push({ role, parts: [{ text }] });
+    return items;
+  }, []);
+}
+
+function appendGeminiUserMessage(contents, message) {
+  const previous = contents.at(-1);
+  if (previous?.role === 'user') {
+    previous.parts[0].text = `${previous.parts[0].text}\n${message}`;
+    return contents;
+  }
+
+  return [...contents, { role: 'user', parts: [{ text: message }] }];
 }
 
 function geminiEndpoint(modelName = geminiModel) {
@@ -209,9 +228,10 @@ app.post('/api/chat', async (request, response) => {
 
   try {
     if (geminiApiKey) {
+      const contents = appendGeminiUserMessage(formatGeminiHistory(history), cleanMessage);
       const result = await generateGeminiText({
         instructions: systemInstructions(locale, mode),
-        contents: [...formatGeminiHistory(history), { role: 'user', parts: [{ text: cleanMessage }] }],
+        contents,
         maxOutputTokens: mode === 'voice-support' ? 220 : 360,
       });
 
