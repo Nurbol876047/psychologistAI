@@ -29,7 +29,7 @@ Production build:
 
 ```bash
 npm run build
-npm run preview
+npm start
 ```
 
 Проверка кода:
@@ -123,4 +123,12 @@ POST /api/speech-to-text
 }
 ```
 
-Если backend недоступен, `src/services/aiService.js` включает реалистичный mock response, чтобы презентация работала автономно.
+Для Render используйте Web Service, а не Static Site:
+
+```text
+Build Command: npm ci && npm run build
+Start Command: npm start
+Environment: GEMINI_API_KEY=ваш ключ
+```
+
+Если `/api/health` на production возвращает `404`, значит запущен только статический frontend, и чат не сможет обращаться к Gemini.

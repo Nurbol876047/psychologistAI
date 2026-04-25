@@ -1,9 +1,14 @@
 import 'dotenv/config';
+import { existsSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
 import multer from 'multer';
 import OpenAI, { toFile } from 'openai';
 
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const distPath = resolve(currentDir, '../dist');
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 18 * 1024 * 1024 } });
 const port = Number(process.env.PORT || 8787);
@@ -20,6 +25,7 @@ const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 const activeProvider = geminiApiKey ? 'gemini' : openai ? 'openai' : 'mock';
 const activeModel = geminiApiKey ? geminiModel : openai ? openaiModel : 'mock';
+const hasStaticBuild = existsSync(resolve(distPath, 'index.html'));
 
 app.use(cors({ origin: clientOrigin }));
 app.use(express.json({ limit: '1mb' }));
@@ -140,6 +146,14 @@ function mockReply(locale = 'kk') {
   return 'Мен сізді тыңдап тұрмын. Қазір бәрін бірден шешудің қажеті жоқ: бір терең дем алып, ең кішкентай келесі қадамды ғана таңдаңыз.';
 }
 
+function missingProviderMessage(locale = 'kk') {
+  if (locale === 'ru') {
+    return 'AI backend не подключён: добавьте GEMINI_API_KEY в environment variables на Render и перезапустите сервис.';
+  }
+
+  return 'AI backend қосылмаған: Render environment variables ішіне GEMINI_API_KEY қосып, сервисті қайта іске қосыңыз.';
+}
+
 function mockCameraAdvice(locale = 'kk', state = 'calm') {
   const kk = {
     calm:
@@ -199,7 +213,11 @@ app.post('/api/chat', async (request, response) => {
     }
 
     if (!openai) {
-      return response.json({ message: mockReply(locale), source: 'mock-backend' });
+      return response.status(503).json({
+        error: 'ai_provider_missing',
+        message: missingProviderMessage(locale),
+        source: 'error',
+      });
     }
 
     const historyText = formatHistory(history);
@@ -219,7 +237,8 @@ app.post('/api/chat', async (request, response) => {
     console.error(`${activeProvider} chat error:`, error);
     return response.status(500).json({
       error: `${activeProvider}_chat_failed`,
-      message: mockReply(locale),
+      message: locale === 'ru' ? 'Gemini сейчас не смог ответить. Проверьте backend logs на Render.' : 'Gemini қазір жауап бере алмады. Render backend logs тексеріңіз.',
+      source: 'error',
     });
   }
 });
@@ -352,7 +371,15 @@ app.post('/api/speech-to-text', upload.single('audio'), async (request, response
   }
 });
 
+if (hasStaticBuild) {
+  app.use(express.static(distPath));
+  app.get(/^(?!\/api).*/, (_request, response) => {
+    response.sendFile(resolve(distPath, 'index.html'));
+  });
+}
+
 app.listen(port, () => {
   console.log(`Teacher Support AI backend listening on http://localhost:${port}`);
   console.log(`${activeProvider} provider enabled with model ${activeModel}`);
+  console.log(hasStaticBuild ? `Serving frontend from ${distPath}` : 'Static frontend build not found; API-only mode');
 });

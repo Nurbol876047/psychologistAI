@@ -1,24 +1,22 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
-const fallbackResponses = [
-  'Сізді түсінемін. Мұндай сәтте бәрін бірден көтерудің қажеті жоқ. Қазір бір терең дем алып, ең жақын бір ғана қадамды таңдауға болады.',
-  'Сіз жалғыз емессіз. Бүгін өзіңізден мінсіз болуды талап етпей, күшіңіз жететін көлемді ғана қалдыруға рұқсат беріңіз.',
-  'Бұл сезіміңіз маңызды. Оны басып тастамай, жұмсақ байқап көрейік: денеңіз қай жерде кернеуді сезіп тұр?',
-];
+function buildErrorReply(locale = 'kk', detail = '') {
+  const content =
+    locale === 'ru'
+      ? 'AI backend сейчас не отвечает. Проверьте, что Render запущен как Node Web Service и что в Environment добавлен GEMINI_API_KEY.'
+      : 'AI backend қазір жауап бермей тұр. Render Node Web Service болып іске қосылғанын және Environment ішінде GEMINI_API_KEY бар екенін тексеріңіз.';
 
-function buildFallbackReply(message) {
-  const index = Math.abs(message.length) % fallbackResponses.length;
   return {
     role: 'ai',
-    content: fallbackResponses[index],
-    source: 'mock',
+    content: detail ? `${content} (${detail})` : content,
+    source: 'error',
   };
 }
 
 export async function sendChatMessage({ message, history = [], locale = 'kk', mode = 'support' }) {
   const trimmedMessage = message.trim();
   if (!trimmedMessage) {
-    return buildFallbackReply('empty');
+    return buildErrorReply(locale, 'empty message');
   }
 
   try {
@@ -38,15 +36,24 @@ export async function sendChatMessage({ message, history = [], locale = 'kk', mo
     }
 
     const data = await response.json();
+    const content = data.message ?? data.content ?? '';
+
+    if (data.source === 'mock-backend') {
+      throw new Error('AI provider is not configured');
+    }
+
+    if (!content.trim()) {
+      throw new Error('AI backend returned an empty message');
+    }
+
     return {
       role: 'ai',
-      content: data.message ?? data.content ?? '',
+      content,
       source: data.source ?? 'backend',
     };
   } catch (error) {
-    console.info('Using local AI mock response:', error.message);
-    await new Promise((resolve) => setTimeout(resolve, 650));
-    return buildFallbackReply(trimmedMessage);
+    console.info('AI backend error:', error.message);
+    return buildErrorReply(locale, error.message);
   }
 }
 
