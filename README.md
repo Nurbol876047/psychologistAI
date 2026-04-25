@@ -84,16 +84,17 @@ server/index.js
 
 1. Создайте локальный `.env` на основе `.env.example`.
 2. Вставьте новый Gemini API key только в `.env`.
-3. Запустите backend:
-
-```bash
-npm run dev:api
-```
-
-4. Отдельно запустите frontend:
+3. Запустите приложение:
 
 ```bash
 npm run dev
+```
+
+Эта команда поднимает и backend, и frontend. Если нужно запустить их отдельно:
+
+```bash
+npm run dev:api
+npm run dev:web
 ```
 
 Vite proxy уже настроен на `http://localhost:8787`, поэтому frontend отправляет:

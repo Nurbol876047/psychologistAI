@@ -41,7 +41,7 @@ export async function sendChatMessage({ message, history = [], locale = 'kk', mo
     return {
       role: 'ai',
       content: data.message ?? data.content ?? '',
-      source: 'backend',
+      source: data.source ?? 'backend',
     };
   } catch (error) {
     console.info('Using local AI mock response:', error.message);

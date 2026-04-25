@@ -1,9 +1,15 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, Send, UserRound } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
 export default function ChatPanel({ messages, input, setInput, onSend, busy = false }) {
   const { t } = useLanguage();
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [messages, busy]);
 
   return (
     <div className="flex h-full min-h-[360px] flex-col rounded-[1.55rem] border border-white/12 bg-white/7 p-4 backdrop-blur-xl sm:min-h-[520px]">
@@ -43,6 +49,7 @@ export default function ChatPanel({ messages, input, setInput, onSend, busy = fa
             );
           })}
         </AnimatePresence>
+        <div ref={bottomRef} />
       </div>
 
       <form
